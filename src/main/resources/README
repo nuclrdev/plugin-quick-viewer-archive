@@ -1,0 +1,5 @@
+# Core Plugin: Quick Archive Viewer
+
+A **Nuclr Commander** quick-view plugin that inspects common archive formats and shows generally available
+metadata such as entry counts, unpacked totals, root items, timestamps and a bounded file listing.
+
