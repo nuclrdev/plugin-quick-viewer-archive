@@ -1,10 +1,10 @@
-# Archive Quick Viewer
+# 🐢📦 Archive Quick Viewer
 
-A [Nuclr Commander](https://nuclr.dev) plugin that renders a read-only quick preview for common archive formats. It does not extract files or mount the archive. Instead, it shows the generally available metadata you usually want at a glance: file counts, total sizes, root entries, timestamps, and a bounded file listing.
+A [Nuclr Commander](https://nuclr.dev) plugin that renders a read-only quick preview for common archive formats. It does not extract files or mount the archive. Instead, it shows the generally available metadata you usually want at a glance: file counts, total sizes, root entries, timestamps, and a bounded file listing. Slow and steady, but for archives. 🐢
 
 ---
 
-## What It Shows
+## 👀 What It Shows
 
 | Section | Details |
 |---|---|
@@ -17,7 +17,7 @@ A [Nuclr Commander](https://nuclr.dev) plugin that renders a read-only quick pre
 
 ---
 
-## Supported Formats
+## 🧰 Supported Formats
 
 The current implementation supports quick inspection of:
 
@@ -33,11 +33,11 @@ The current implementation supports quick inspection of:
 - `cpio`
 - `ar`
 
-Some formats expose more metadata than others. For example, packed sizes are usually available for ZIP/RAR entries, but not for all stream-based archive formats.
+Some formats expose more metadata than others. For example, packed sizes are usually available for ZIP/RAR entries, but not for all stream-based archive formats. Some archive shells are more talkative than others. 🐢
 
 ---
 
-## Design Notes
+## ✨ Design Notes
 
 - **Read-only preview**: no extraction, mutation, or external tools
 - **Cancellation-aware**: switching files cancels the in-flight parse
@@ -47,13 +47,13 @@ Some formats expose more metadata than others. For example, packed sizes are usu
 
 ---
 
-## Building
+## 🛠️ Building
 
 Prerequisites:
 
-- **Java 21+**
-- **Maven 3.9+**
-- Local `plugins-sdk` install
+- **Java 21+** ☕
+- **Maven 3.9+** 🔧
+- Local `plugins-sdk` install 📚
 
 Build and test:
 
@@ -74,7 +74,7 @@ quick-view-archive-1.0.0.jar
 quick-view-archive-1.0.0.zip
 ```
 
-### Signed build
+### 🔐 Signed Build
 
 If you want the detached plugin signature as well:
 
@@ -90,7 +90,7 @@ C:/nuclr/key/nuclr-signing.p12
 
 ---
 
-## Installation
+## 🚚 Installation
 
 Copy the packaged plugin into Nuclr Commander’s `plugins/` directory:
 
@@ -106,7 +106,7 @@ quick-view-archive-1.0.0.zip.sig
 
 ---
 
-## Repository Layout
+## 🗂️ Repository Layout
 
 ```text
 src/
@@ -127,16 +127,24 @@ src/
 
 ---
 
-## Implementation Notes
+## ⚙️ Implementation Notes
 
-- ZIP-family archives are read with Apache Commons Compress `ZipFile`
-- TAR and compressed TAR variants are inspected as streams
-- 7z support uses Commons Compress plus `org.tukaani:xz`
-- RAR support uses `junrar`
-- Single-file compressed formats such as plain `.gz` can only expose limited metadata compared with container formats like `.zip` or `.tar.gz`
+- ZIP-family archives are read with Apache Commons Compress `ZipFile` 📦
+- TAR and compressed TAR variants are inspected as streams 🌊
+- 7z support uses Commons Compress plus `org.tukaani:xz` 7️⃣
+- RAR support uses `junrar` 🧩
+- Single-file compressed formats such as plain `.gz` can only expose limited metadata compared with container formats like `.zip` or `.tar.gz` 📝
 
 ---
 
-## License
+## 🐢 Notes From The Shell
+
+- The README is intentionally GitHub-facing; the packaged plugin still has its own smaller in-plugin README.
+- The preview is built for quick inspection, not archive browsing or extraction.
+- Turtles are not required at runtime, but clearly improve morale. 🐢💚
+
+---
+
+## 📄 License
 
 Apache License 2.0. See [LICENSE](LICENSE).
