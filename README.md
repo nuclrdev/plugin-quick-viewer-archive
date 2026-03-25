@@ -2,6 +2,8 @@
 
 A [Nuclr Commander](https://nuclr.dev) plugin that renders a read-only quick preview for common archive formats. It does not extract files or mount the archive. Instead, it shows the generally available metadata you usually want at a glance: file counts, total sizes, root entries, timestamps, and a bounded file listing. Slow and steady, but for archives. 🐢
 
+![Archive Quick Viewer screenshot](images/screenshot-1.jpg)
+
 ---
 
 ## 👀 What It Shows
