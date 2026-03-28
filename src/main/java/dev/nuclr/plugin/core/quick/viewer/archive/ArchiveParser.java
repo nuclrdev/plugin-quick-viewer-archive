@@ -3,6 +3,7 @@ package dev.nuclr.plugin.core.quick.viewer.archive;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -223,7 +224,8 @@ public final class ArchiveParser {
 
 	private static void parseRar(PluginPathResource item, SummaryBuilder builder, AtomicBoolean cancelled) throws Exception {
 		builder.formatLabel = "RAR";
-		try (InputStream input = item.openStream(); Archive archive = new Archive(input)) {
+		try (PreparedRarArchive prepared = openRarArchive(item, cancelled)) {
+			Archive archive = prepared.archive();
 			try {
 				builder.encrypted = archive.isEncrypted() || archive.isPasswordProtected();
 			} catch (RarException ignored) {
@@ -240,6 +242,40 @@ public final class ArchiveParser {
 				if (header.isSplitAfter() || header.isSplitBefore()) {
 					builder.addWarning("Multi-volume RAR member detected.");
 				}
+			}
+		}
+	}
+
+	private static PreparedRarArchive openRarArchive(PluginPathResource item, AtomicBoolean cancelled) throws Exception {
+		Path path = item.getPath();
+		if (path != null) {
+			try {
+				return new PreparedRarArchive(new Archive(path.toFile()), null);
+			} catch (UnsupportedOperationException | IllegalArgumentException ignored) {
+				// Fall back to a temp file for non-default filesystems.
+			}
+		}
+
+		Path tempFile = Files.createTempFile("nuclr-rar-preview-", ".rar");
+		try {
+			try (InputStream input = item.openStream(); OutputStream output = Files.newOutputStream(tempFile)) {
+				copyWithCancellation(input, output, cancelled);
+			}
+			checkCancelled(cancelled);
+			return new PreparedRarArchive(new Archive(tempFile.toFile()), tempFile);
+		} catch (Exception e) {
+			Files.deleteIfExists(tempFile);
+			throw e;
+		}
+	}
+
+	private static void copyWithCancellation(InputStream input, OutputStream output, AtomicBoolean cancelled) throws Exception {
+		byte[] buffer = new byte[8192];
+		int read;
+		while ((read = input.read(buffer)) >= 0) {
+			checkCancelled(cancelled);
+			if (read > 0) {
+				output.write(buffer, 0, read);
 			}
 		}
 	}
@@ -640,6 +676,20 @@ public final class ArchiveParser {
 
 		ArchiveRootInfo toInfo() {
 			return new ArchiveRootInfo(name, directory, descendantCount, totalSize, lastModified);
+		}
+	}
+
+	private record PreparedRarArchive(Archive archive, Path tempFile) implements AutoCloseable {
+
+		@Override
+		public void close() throws Exception {
+			try {
+				archive.close();
+			} finally {
+				if (tempFile != null) {
+					Files.deleteIfExists(tempFile);
+				}
+			}
 		}
 	}
 }
