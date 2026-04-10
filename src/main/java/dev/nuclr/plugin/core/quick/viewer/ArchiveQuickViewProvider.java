@@ -17,27 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ArchiveQuickViewProvider implements NuclrPlugin {
 
-	private static final Set<String> EXTENSIONS = Set.of(
-			"zip",
-			"jar",
-			"war",
-			"ear",
-			"apk",
-			"xapk",
-			"apks",
-			"apkm",
-			"tar",
-			"gz",
-			"tgz",
-			"bz2",
-			"tbz2",
-			"tbz",
-			"xz",
-			"txz",
-			"7z",
-			"rar",
-			"cpio",
-			"ar");
+	private static final Set<String> EXTENSIONS = Set.of("zip", "jar", "war", "ear", "apk", "xapk", "apks", "apkm",
+			"tar", "gz", "tgz", "bz2", "tbz2", "tbz", "xz", "txz", "7z", "rar", "cpio", "ar");
 
 	private NuclrPluginContext context;
 	private ArchiveViewPanel panel;
@@ -113,72 +94,71 @@ public class ArchiveQuickViewProvider implements NuclrPlugin {
 
 	@Override
 	public boolean isFocused() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
+	private String name = "Archive Quick Viewer";
+	private String id = "dev.nuclr.plugin.core.quickviewer.archive";
+	private String version = "1.0.0";
+	private String description = "A quick viewer for common archive formats that shows file counts, totals, root entries and timestamps.";
+	private String author = "Nuclr Development Team";
+	private String license = "Apache-2.0";
+	private String website = "https://nuclr.dev";
+	private String pageUrl = "https://nuclr.dev/plugins/core/archive-quick-viewer.html";
+	private String docUrl = "https://nuclr.dev/plugins/core/archive-quick-viewer.html";
+
 	@Override
 	public String id() {
-		// TODO Auto-generated method stub
-		return null;
+		return id;
 	}
 
 	@Override
 	public String name() {
-		// TODO Auto-generated method stub
-		return null;
+		return name;
 	}
 
 	@Override
 	public String version() {
-		// TODO Auto-generated method stub
-		return null;
+		return version;
 	}
 
 	@Override
 	public String description() {
-		// TODO Auto-generated method stub
-		return null;
+		return description;
 	}
 
 	@Override
 	public String author() {
-		// TODO Auto-generated method stub
-		return null;
+		return author;
 	}
 
 	@Override
 	public String license() {
-		// TODO Auto-generated method stub
-		return null;
+		return license;
 	}
 
 	@Override
 	public String website() {
-		// TODO Auto-generated method stub
-		return null;
+		return website;
 	}
 
 	@Override
 	public String pageUrl() {
-		// TODO Auto-generated method stub
-		return null;
+		return pageUrl;
 	}
 
 	@Override
 	public String docUrl() {
-		// TODO Auto-generated method stub
-		return null;
+		return docUrl;
 	}
 
 	@Override
 	public Developer type() {
-		// TODO Auto-generated method stub
-		return null;
+		return Developer.Official;
 	}
 
 	@Override
 	public void updateTheme(NuclrThemeScheme themeScheme) {
-		
+
 	}
 }
