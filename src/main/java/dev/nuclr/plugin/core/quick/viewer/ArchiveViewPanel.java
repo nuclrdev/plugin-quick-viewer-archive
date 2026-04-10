@@ -22,7 +22,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
 
-import dev.nuclr.plugin.PluginPathResource;
+import dev.nuclr.platform.plugin.NuclrResourcePath;
 import dev.nuclr.plugin.core.quick.viewer.archive.ArchiveEntryInfo;
 import dev.nuclr.plugin.core.quick.viewer.archive.ArchiveMetadata;
 import dev.nuclr.plugin.core.quick.viewer.archive.ArchiveParser;
@@ -44,7 +44,7 @@ public class ArchiveViewPanel extends JPanel {
 		showMessage("No file selected.");
 	}
 
-	public boolean load(PluginPathResource item, AtomicBoolean cancelled) {
+	public boolean load(NuclrResourcePath item, AtomicBoolean cancelled) {
 		Thread previous = loadThread;
 		if (previous != null) {
 			previous.interrupt();

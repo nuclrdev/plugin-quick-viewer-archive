@@ -39,7 +39,7 @@ import com.github.junrar.Archive;
 import com.github.junrar.exception.RarException;
 import com.github.junrar.rarfile.FileHeader;
 
-import dev.nuclr.plugin.PluginPathResource;
+import dev.nuclr.platform.plugin.NuclrResourcePath;
 
 public final class ArchiveParser {
 
@@ -51,7 +51,7 @@ public final class ArchiveParser {
 	private ArchiveParser() {
 	}
 
-	public static ArchiveMetadata parse(PluginPathResource item, AtomicBoolean cancelled) throws Exception {
+	public static ArchiveMetadata parse(NuclrResourcePath item, AtomicBoolean cancelled) throws Exception {
 		Objects.requireNonNull(item, "item");
 		Objects.requireNonNull(cancelled, "cancelled");
 
@@ -78,7 +78,7 @@ public final class ArchiveParser {
 		return builder.build();
 	}
 
-	private static void parseByDetection(PluginPathResource item, SummaryBuilder builder, String lowerName, AtomicBoolean cancelled)
+	private static void parseByDetection(NuclrResourcePath item, SummaryBuilder builder, String lowerName, AtomicBoolean cancelled)
 			throws Exception {
 		try (BufferedInputStream raw = openBuffered(item)) {
 			raw.mark(MARK_LIMIT);
@@ -109,7 +109,7 @@ public final class ArchiveParser {
 		throw new IOException("Unsupported archive format.");
 	}
 
-	private static void parseCompressed(PluginPathResource item, SummaryBuilder builder, String lowerName, AtomicBoolean cancelled)
+	private static void parseCompressed(NuclrResourcePath item, SummaryBuilder builder, String lowerName, AtomicBoolean cancelled)
 			throws Exception {
 		try (BufferedInputStream raw = openBuffered(item)) {
 			String compressor = compressorNameFromExtension(lowerName);
@@ -207,7 +207,7 @@ public final class ArchiveParser {
 		}
 	}
 
-	private static void parseSevenZip(PluginPathResource item, SummaryBuilder builder, AtomicBoolean cancelled) throws Exception {
+	private static void parseSevenZip(NuclrResourcePath item, SummaryBuilder builder, AtomicBoolean cancelled) throws Exception {
 		builder.formatLabel = "7z";
 		try (SeekableByteChannel channel = openSeekable(item); SevenZFile sevenZ = new SevenZFile(channel)) {
 			for (SevenZArchiveEntry entry : sevenZ.getEntries()) {
@@ -222,7 +222,7 @@ public final class ArchiveParser {
 		}
 	}
 
-	private static void parseRar(PluginPathResource item, SummaryBuilder builder, AtomicBoolean cancelled) throws Exception {
+	private static void parseRar(NuclrResourcePath item, SummaryBuilder builder, AtomicBoolean cancelled) throws Exception {
 		builder.formatLabel = "RAR";
 		try (PreparedRarArchive prepared = openRarArchive(item, cancelled)) {
 			Archive archive = prepared.archive();
@@ -246,7 +246,7 @@ public final class ArchiveParser {
 		}
 	}
 
-	private static PreparedRarArchive openRarArchive(PluginPathResource item, AtomicBoolean cancelled) throws Exception {
+	private static PreparedRarArchive openRarArchive(NuclrResourcePath item, AtomicBoolean cancelled) throws Exception {
 		Path path = item.getPath();
 		if (path != null) {
 			try {
@@ -280,13 +280,13 @@ public final class ArchiveParser {
 		}
 	}
 
-	private static BufferedInputStream openBuffered(PluginPathResource item) throws Exception {
+	private static BufferedInputStream openBuffered(NuclrResourcePath item) throws Exception {
 		BufferedInputStream buffered = new BufferedInputStream(item.openStream());
 		buffered.mark(MARK_LIMIT);
 		return buffered;
 	}
 
-	private static SeekableByteChannel openSeekable(PluginPathResource item) throws Exception {
+	private static SeekableByteChannel openSeekable(NuclrResourcePath item) throws Exception {
 		if (item.getPath() != null) {
 			return Files.newByteChannel(item.getPath());
 		}
@@ -295,13 +295,13 @@ public final class ArchiveParser {
 		}
 	}
 
-	private static byte[] readSignature(PluginPathResource item) throws Exception {
+	private static byte[] readSignature(NuclrResourcePath item) throws Exception {
 		try (InputStream input = item.openStream()) {
 			return input.readNBytes(SIGNATURE_SIZE);
 		}
 	}
 
-	private static Instant resolveContainerModified(PluginPathResource item) {
+	private static Instant resolveContainerModified(NuclrResourcePath item) {
 		try {
 			Path path = item.getPath();
 			if (path != null) {
@@ -486,7 +486,7 @@ public final class ArchiveParser {
 		return fileTime != null ? fileTime.toInstant() : null;
 	}
 
-	private static String resolveContainerName(PluginPathResource item) {
+	private static String resolveContainerName(NuclrResourcePath item) {
 		if (item.getName() != null && !item.getName().isBlank()) {
 			return item.getName();
 		}

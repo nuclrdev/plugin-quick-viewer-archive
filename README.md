@@ -55,7 +55,7 @@ Prerequisites:
 
 - **Java 21+** ☕
 - **Maven 3.9+** 🔧
-- Local `plugins-sdk` install 📚
+- Local `platform-sdk` install 📚
 
 Build and test:
 
