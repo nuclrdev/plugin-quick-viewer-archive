@@ -11,6 +11,7 @@ import dev.nuclr.platform.NuclrThemeScheme;
 import dev.nuclr.platform.plugin.NuclrMenuResource;
 import dev.nuclr.platform.plugin.NuclrPlugin;
 import dev.nuclr.platform.plugin.NuclrPluginContext;
+import dev.nuclr.platform.plugin.NuclrPluginRole;
 import dev.nuclr.platform.plugin.NuclrResourcePath;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,6 +24,8 @@ public class ArchiveQuickViewProvider implements NuclrPlugin {
 	private NuclrPluginContext context;
 	private ArchiveViewPanel panel;
 	private volatile AtomicBoolean currentCancelled;
+	private NuclrResourcePath currentResource;
+	private String uuid = java.util.UUID.randomUUID().toString();
 
 	@Override
 	public JComponent panel() {
@@ -57,6 +60,7 @@ public class ArchiveQuickViewProvider implements NuclrPlugin {
 		}
 		currentCancelled = cancelled;
 		panel();
+		this.currentResource = resource;
 		return panel.load(resource, cancelled);
 	}
 
@@ -160,5 +164,20 @@ public class ArchiveQuickViewProvider implements NuclrPlugin {
 	@Override
 	public void updateTheme(NuclrThemeScheme themeScheme) {
 
+	}
+
+	@Override
+	public NuclrPluginRole role() {
+		return NuclrPluginRole.QuickViewer;
+	}
+
+	@Override
+	public NuclrResourcePath getCurrentResource() {
+		return this.currentResource;
+	}
+
+	@Override
+	public String uuid() {
+		return uuid;
 	}
 }
