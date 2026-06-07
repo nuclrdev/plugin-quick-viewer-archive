@@ -22,7 +22,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.junit.jupiter.api.Test;
 
-import dev.nuclr.platform.plugin.NuclrResourcePath;
+import dev.nuclr.platform.plugin.NuclrResource;
 
 class ArchiveParserTest {
 
@@ -103,11 +103,15 @@ class ArchiveParserTest {
 		}
 	}
 
-	private static NuclrResourcePath resourceFor(Path path) throws IOException {
-		NuclrResourcePath resource = new NuclrResourcePath();
-		resource.setPath(path);
+	private static NuclrResource resourceFor(Path path) throws IOException {
+		NuclrResource resource = new NuclrResource(path) {
+			@Override
+			public java.io.InputStream openInputStream(java.nio.file.OpenOption... options) throws Exception {
+				return Files.newInputStream(getPath(), options);
+			}
+		};
 		resource.setName(path.getFileName().toString());
-		resource.setSizeBytes(Files.size(path));
+		resource.setLength(Files.size(path));
 		return resource;
 	}
 
