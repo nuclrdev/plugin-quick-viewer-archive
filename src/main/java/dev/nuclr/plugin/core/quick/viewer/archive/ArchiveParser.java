@@ -12,7 +12,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -27,7 +26,7 @@ import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorInputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
@@ -67,7 +66,7 @@ public final class ArchiveParser {
 		} else if (looksLikeCompressedArchive(lowerName)) {
 			parseCompressed(item, builder, lowerName, cancelled);
 		} else if (looksLikeZipFamily(lowerName) && item.getPath() != null) {
-			parseZip(item.getPath(), builder, cancelled, extensionLabel(lowerName, "ZIP"));
+			parseZip(item.openInputStream(), builder, cancelled, extensionLabel(lowerName, "ZIP"));
 		} else {
 			parseByDetection(item, builder, lowerName, cancelled);
 		}
@@ -78,14 +77,15 @@ public final class ArchiveParser {
 		return builder.build();
 	}
 
-	private static void parseByDetection(NuclrResource item, SummaryBuilder builder, String lowerName, AtomicBoolean cancelled)
-			throws Exception {
+	private static void parseByDetection(NuclrResource item, SummaryBuilder builder, String lowerName,
+			AtomicBoolean cancelled) throws Exception {
 		try (BufferedInputStream raw = openBuffered(item)) {
 			raw.mark(MARK_LIMIT);
 			try {
 				String archiveType = ArchiveStreamFactory.detect(raw);
 				raw.reset();
-				parseArchiveStream(raw, archiveType, builder, cancelled, extensionLabel(lowerName, prettyArchiveName(archiveType)));
+				parseArchiveStream(raw, archiveType, builder, cancelled,
+						extensionLabel(lowerName, prettyArchiveName(archiveType)));
 				return;
 			} catch (ArchiveException ignored) {
 				raw.reset();
@@ -103,14 +103,14 @@ public final class ArchiveParser {
 		}
 
 		if (item.getPath() != null) {
-			parseZip(item.getPath(), builder, cancelled, extensionLabel(lowerName, "ZIP"));
+			parseZip(item.openInputStream(), builder, cancelled, extensionLabel(lowerName, "ZIP"));
 			return;
 		}
 		throw new IOException("Unsupported archive format.");
 	}
 
-	private static void parseCompressed(NuclrResource item, SummaryBuilder builder, String lowerName, AtomicBoolean cancelled)
-			throws Exception {
+	private static void parseCompressed(NuclrResource item, SummaryBuilder builder, String lowerName,
+			AtomicBoolean cancelled) throws Exception {
 		try (BufferedInputStream raw = openBuffered(item)) {
 			String compressor = compressorNameFromExtension(lowerName);
 			if (compressor == null) {
@@ -147,25 +147,27 @@ public final class ArchiveParser {
 			return;
 		}
 
-		try (CompressorInputStream compressed = new CompressorStreamFactory().createCompressorInputStream(compressor, new BufferedInputStream(raw));
-				BufferedInputStream decompressed = new BufferedInputStream(compressed)) {
+		try (CompressorInputStream compressed = new CompressorStreamFactory().createCompressorInputStream(compressor,
+				new BufferedInputStream(raw)); BufferedInputStream decompressed = new BufferedInputStream(compressed)) {
 			String nestedLabel = compressedArchiveLabel(lowerName, compressor);
 			if (tryNestedArchive(decompressed, nestedLabel, builder, cancelled)) {
 				return;
 			}
 			builder.formatLabel = prettyCompressorName(compressor);
-			builder.addEntry(stripCompressedSuffix(builder.containerName, lowerName), false, -1L, builder.containerSize, null);
+			builder.addEntry(stripCompressedSuffix(builder.containerName, lowerName), false, -1L, builder.containerSize,
+					null);
 			builder.addWarning("Uncompressed size is not available from this single-file stream.");
 		}
 	}
 
-	private static boolean tryNestedArchive(BufferedInputStream decompressed, String nestedLabel, SummaryBuilder builder,
-			AtomicBoolean cancelled) throws Exception {
+	private static boolean tryNestedArchive(BufferedInputStream decompressed, String nestedLabel,
+			SummaryBuilder builder, AtomicBoolean cancelled) throws Exception {
 		decompressed.mark(MARK_LIMIT);
 		try {
 			String nestedType = ArchiveStreamFactory.detect(decompressed);
 			decompressed.reset();
-			parseArchiveStream(decompressed, nestedType, builder, cancelled, nestedLabel != null ? nestedLabel : prettyArchiveName(nestedType));
+			parseArchiveStream(decompressed, nestedType, builder, cancelled,
+					nestedLabel != null ? nestedLabel : prettyArchiveName(nestedType));
 			return true;
 		} catch (ArchiveException ignored) {
 			decompressed.reset();
@@ -173,50 +175,47 @@ public final class ArchiveParser {
 		}
 	}
 
-	private static void parseZip(Path path, SummaryBuilder builder, AtomicBoolean cancelled, String label) throws Exception {
+	private static void parseZip(InputStream inputStream, SummaryBuilder builder, AtomicBoolean cancelled, String label)
+			throws Exception {
+
 		builder.formatLabel = label;
-		try (ZipFile zip = new ZipFile(path)) {
-			Enumeration<ZipArchiveEntry> entries = zip.getEntries();
-			while (entries.hasMoreElements()) {
+
+		try (ZipArchiveInputStream zip = new ZipArchiveInputStream(inputStream)) {
+
+			ZipArchiveEntry entry;
+
+			while ((entry = zip.getNextZipEntry()) != null) {
 				checkCancelled(cancelled);
-				ZipArchiveEntry entry = entries.nextElement();
-				builder.addEntry(
-						entry.getName(),
-						entry.isDirectory(),
-						entry.getSize(),
-						null,
+
+				builder.addEntry(entry.getName(), entry.isDirectory(), entry.getSize(), null,
 						toInstant(entry.getLastModifiedTime()));
+
+				zip.skip(Long.MAX_VALUE);
 			}
 		}
 	}
 
-	private static void parseArchiveStream(InputStream input, String archiveType, SummaryBuilder builder, AtomicBoolean cancelled,
-			String label) throws Exception {
+	private static void parseArchiveStream(InputStream input, String archiveType, SummaryBuilder builder,
+			AtomicBoolean cancelled, String label) throws Exception {
 		builder.formatLabel = label != null ? label : prettyArchiveName(archiveType);
-		try (ArchiveInputStream<? extends ArchiveEntry> archive = new ArchiveStreamFactory().createArchiveInputStream(archiveType, input)) {
+		try (ArchiveInputStream<? extends ArchiveEntry> archive = new ArchiveStreamFactory()
+				.createArchiveInputStream(archiveType, input)) {
 			ArchiveEntry entry;
 			while ((entry = archive.getNextEntry()) != null) {
 				checkCancelled(cancelled);
-				builder.addEntry(
-						entry.getName(),
-						entry.isDirectory(),
-						entry.getSize(),
-						extractCompressedSize(entry),
+				builder.addEntry(entry.getName(), entry.isDirectory(), entry.getSize(), extractCompressedSize(entry),
 						toInstant(entry.getLastModifiedDate()));
 			}
 		}
 	}
 
-	private static void parseSevenZip(NuclrResource item, SummaryBuilder builder, AtomicBoolean cancelled) throws Exception {
+	private static void parseSevenZip(NuclrResource item, SummaryBuilder builder, AtomicBoolean cancelled)
+			throws Exception {
 		builder.formatLabel = "7z";
 		try (SeekableByteChannel channel = openSeekable(item); SevenZFile sevenZ = new SevenZFile(channel)) {
 			for (SevenZArchiveEntry entry : sevenZ.getEntries()) {
 				checkCancelled(cancelled);
-				builder.addEntry(
-						entry.getName(),
-						entry.isDirectory(),
-						entry.getSize(),
-						null,
+				builder.addEntry(entry.getName(), entry.isDirectory(), entry.getSize(), null,
 						toInstant(entry.getLastModifiedTime()));
 			}
 		}
@@ -233,10 +232,7 @@ public final class ArchiveParser {
 			}
 			for (FileHeader header : archive.getFileHeaders()) {
 				checkCancelled(cancelled);
-				builder.addEntry(
-						header.getFileName(),
-						header.isDirectory(),
-						header.getFullUnpackSize(),
+				builder.addEntry(header.getFileName(), header.isDirectory(), header.getFullUnpackSize(),
 						header.getFullPackSize() >= 0 ? header.getFullPackSize() : null,
 						toInstant(header.getLastModifiedTime()));
 				if (header.isSplitAfter() || header.isSplitBefore()) {
@@ -269,7 +265,8 @@ public final class ArchiveParser {
 		}
 	}
 
-	private static void copyWithCancellation(InputStream input, OutputStream output, AtomicBoolean cancelled) throws Exception {
+	private static void copyWithCancellation(InputStream input, OutputStream output, AtomicBoolean cancelled)
+			throws Exception {
 		byte[] buffer = new byte[8192];
 		int read;
 		while ((read = input.read(buffer)) >= 0) {
@@ -314,26 +311,15 @@ public final class ArchiveParser {
 	}
 
 	private static boolean looksLikeZipFamily(String lowerName) {
-		return lowerName.endsWith(".zip")
-				|| lowerName.endsWith(".jar")
-				|| lowerName.endsWith(".war")
-				|| lowerName.endsWith(".ear")
-				|| lowerName.endsWith(".apk")
-				|| lowerName.endsWith(".xapk")
-				|| lowerName.endsWith(".apks")
-				|| lowerName.endsWith(".apkm");
+		return lowerName.endsWith(".zip") || lowerName.endsWith(".jar") || lowerName.endsWith(".war")
+				|| lowerName.endsWith(".ear") || lowerName.endsWith(".apk") || lowerName.endsWith(".xapk")
+				|| lowerName.endsWith(".apks") || lowerName.endsWith(".apkm");
 	}
 
 	private static boolean looksLikeCompressedArchive(String lowerName) {
-		return lowerName.endsWith(".tar.gz")
-				|| lowerName.endsWith(".tgz")
-				|| lowerName.endsWith(".tar.bz2")
-				|| lowerName.endsWith(".tbz2")
-				|| lowerName.endsWith(".tbz")
-				|| lowerName.endsWith(".tar.xz")
-				|| lowerName.endsWith(".txz")
-				|| lowerName.endsWith(".gz")
-				|| lowerName.endsWith(".bz2")
+		return lowerName.endsWith(".tar.gz") || lowerName.endsWith(".tgz") || lowerName.endsWith(".tar.bz2")
+				|| lowerName.endsWith(".tbz2") || lowerName.endsWith(".tbz") || lowerName.endsWith(".tar.xz")
+				|| lowerName.endsWith(".txz") || lowerName.endsWith(".gz") || lowerName.endsWith(".bz2")
 				|| lowerName.endsWith(".xz");
 	}
 
@@ -600,27 +586,11 @@ public final class ArchiveParser {
 			if (fileCount == 0) {
 				totalCompressedKnown = false;
 			}
-			return new ArchiveMetadata(
-					containerName,
-					formatLabel,
-					containerSize,
-					containerModified,
-					entryCount,
-					fileCount,
-					directoryCount,
-					totalUncompressedSize,
-					totalUncompressedKnown,
-					totalCompressedSize,
-					totalCompressedKnown,
-					roots.size(),
-					earliestEntryModified,
-					latestEntryModified,
-					Collections.unmodifiableList(rootEntries),
-					Collections.unmodifiableList(new ArrayList<>(entries)),
-					entriesTruncated,
-					comment,
-					encrypted,
-					Collections.unmodifiableList(new ArrayList<>(warnings)));
+			return new ArchiveMetadata(containerName, formatLabel, containerSize, containerModified, entryCount,
+					fileCount, directoryCount, totalUncompressedSize, totalUncompressedKnown, totalCompressedSize,
+					totalCompressedKnown, roots.size(), earliestEntryModified, latestEntryModified,
+					Collections.unmodifiableList(rootEntries), Collections.unmodifiableList(new ArrayList<>(entries)),
+					entriesTruncated, comment, encrypted, Collections.unmodifiableList(new ArrayList<>(warnings)));
 		}
 
 		private void addRoot(String path, boolean directory, long size, Instant modified) {
