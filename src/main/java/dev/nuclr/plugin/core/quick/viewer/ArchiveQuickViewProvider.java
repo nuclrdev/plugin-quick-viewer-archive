@@ -128,7 +128,7 @@ public class ArchiveQuickViewProvider implements QuickViewNuclrPlugin {
 
 	private String name = "Archive Quick Viewer";
 	private String id = "dev.nuclr.plugin.core.quickviewer.archive";
-	private String version = "1.0.0";
+	private final String version = loadVersion();
 	private String description = "A quick viewer for common archive formats that shows file counts, totals, root entries and timestamps.";
 	private String author = "Nuclr Development Team";
 	private String license = "Apache-2.0";
@@ -149,6 +149,16 @@ public class ArchiveQuickViewProvider implements QuickViewNuclrPlugin {
 	@Override
 	public String version() {
 		return version;
+	}
+	private static String loadVersion() {
+		try (var stream = ArchiveQuickViewProvider.class.getResourceAsStream("/plugin.properties")) {
+			if (stream == null) return "unknown";
+			var props = new java.util.Properties();
+			props.load(stream);
+			return props.getProperty("version", "unknown");
+		} catch (java.io.IOException e) {
+			return "unknown";
+		}
 	}
 
 	@Override

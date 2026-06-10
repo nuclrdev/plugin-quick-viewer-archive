@@ -21,21 +21,17 @@ A [Nuclr Commander](https://nuclr.dev) plugin that renders a read-only quick pre
 
 ## 🧰 Supported Formats
 
-The current implementation supports quick inspection of:
+| Format | Extensions |
+|---|---|
+| ZIP family | `zip`, `jar`, `war`, `ear`, `apk`, `xapk`, `apks`, `apkm` |
+| TAR | `tar`, `tar.gz`, `tgz`, `tar.bz2`, `tbz2`, `tbz`, `tar.xz`, `txz` |
+| Single-file compressed | `gz`, `bz2`, `xz` |
+| 7-Zip | `7z` |
+| RAR | `rar` |
+| CPIO | `cpio` |
+| Unix AR | `ar` |
 
-- `zip`, `jar`, `war`, `ear`
-- `apk`, `xapk`, `apks`, `apkm`
-- `tar`
-- `tar.gz`, `tgz`
-- `tar.bz2`, `tbz2`, `tbz`
-- `tar.xz`, `txz`
-- `gz`, `bz2`, `xz`
-- `7z`
-- `rar`
-- `cpio`
-- `ar`
-
-Some formats expose more metadata than others. For example, packed sizes are usually available for ZIP/RAR entries, but not for all stream-based archive formats. Some archive shells are more talkative than others. 🐢
+Some formats expose more metadata than others. For example, packed sizes are usually available for ZIP/RAR entries but not for all stream-based archive formats. 🐢
 
 ---
 
@@ -49,82 +45,30 @@ Some formats expose more metadata than others. For example, packed sizes are usu
 
 ---
 
-## 🛠️ Building
+## 📥 Installation
 
-Prerequisites:
-
-- **Java 21+** ☕
-- **Maven 3.9+** 🔧
-- Local `platform-sdk` install 📚
-
-Build and test:
-
-```bash
-mvn clean test
-```
-
-Package the plugin:
-
-```bash
-mvn clean package -DskipTests
-```
-
-Artifacts are written to `target/`:
+Copy the signed plugin archive and detached signature into the Nuclr Commander `plugins/` directory:
 
 ```text
-quick-view-archive-1.0.0.jar
-quick-view-archive-1.0.0.zip
+quick-view-archive-<version>.zip
+quick-view-archive-<version>.zip.sig
 ```
 
-### 🔐 Signed Build
-
-If you want the detached plugin signature as well:
-
-```bash
-mvn clean verify -Djarsigner.storepass=<keystore-password>
-```
-
-This expects the signing keystore at:
-
-```text
-C:/nuclr/key/nuclr-signing.p12
-```
+Nuclr Commander verifies the RSA-SHA256 signature against `nuclr-cert.pem` on load. The plugin becomes available immediately without a restart.
 
 ---
 
-## 🚚 Installation
-
-Copy the packaged plugin into Nuclr Commander’s `plugins/` directory:
+## 🗂️ Source Layout
 
 ```text
-quick-view-archive-1.0.0.zip
-```
-
-If you produced a signed build, copy the signature too:
-
-```text
-quick-view-archive-1.0.0.zip.sig
-```
-
----
-
-## 🗂️ Repository Layout
-
-```text
-src/
-|-- main/java/dev/nuclr/plugin/core/quick/viewer/
-|   |-- ArchiveQuickViewProvider.java   # Quick-view provider entry point
-|   |-- ArchiveViewPanel.java           # Swing UI renderer
-|   `-- archive/
-|       |-- ArchiveParser.java          # Format detection and metadata extraction
-|       |-- ArchiveMetadata.java        # Parsed archive summary model
-|       |-- ArchiveEntryInfo.java       # Individual file entry model
-|       `-- ArchiveRootInfo.java        # Top-level aggregate model
-|-- main/resources/
-|   |-- plugin.json
-|   `-- README
-`-- test/java/dev/nuclr/plugin/core/quick/viewer/archive/
-    `-- ArchiveParserTest.java
+src/main/java/dev/nuclr/plugin/core/quick/viewer/
+├── ArchiveQuickViewProvider.java   plugin entry point
+├── ArchiveViewPanel.java           Swing UI renderer
+└── archive/
+    ├── ArchiveParser.java          format detection and metadata extraction
+    ├── ArchiveMetadata.java        parsed archive summary model
+    ├── ArchiveEntryInfo.java       individual file entry model
+    └── ArchiveRootInfo.java        top-level aggregate model
 ```
 
 ---
@@ -139,11 +83,14 @@ src/
 
 ---
 
-## 🐢 Notes From The Shell
+## 📚 Dependencies
 
-- The README is intentionally GitHub-facing; the packaged plugin still has its own smaller in-plugin README.
-- The preview is built for quick inspection, not archive browsing or extraction.
-- Turtles are not required at runtime, but clearly improve morale. 🐢💚
+| Library | Version | Purpose |
+|---|---|---|
+| `dev.nuclr:platform-sdk` | `3.0.1` | Nuclr platform interfaces |
+| `commons-compress` | `1.28.0` | ZIP, TAR, 7z, GZ, BZ2, XZ, CPIO, AR parsing |
+| `junrar` | `7.5.8` | RAR archive parsing |
+| `xz` | `1.11` | XZ decompression support |
 
 ---
 
