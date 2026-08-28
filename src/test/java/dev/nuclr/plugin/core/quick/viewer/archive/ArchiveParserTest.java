@@ -103,6 +103,62 @@ class ArchiveParserTest {
 		}
 	}
 
+	@Test
+	void parsesAZipWithNoLocalFile() throws Exception {
+		// A bucket object: name and stream only, no path to open.
+		Path archive = Files.createTempFile("archive-parser-remote-", ".zip");
+		try {
+			try (ZipArchiveOutputStream output = new ZipArchiveOutputStream(archive)) {
+				addZipEntry(output, "README.txt", "hello zip");
+				addZipEntry(output, "docs/manual.txt", "manual");
+			}
+			byte[] bytes = Files.readAllBytes(archive);
+
+			ArchiveMetadata metadata = ArchiveParser.parse(streamOnly("backup.zip", bytes), new AtomicBoolean(false));
+
+			assertEquals("ZIP", metadata.formatLabel());
+			assertEquals(2, metadata.entryCount());
+			assertEquals(2, metadata.fileCount());
+		} finally {
+			Files.deleteIfExists(archive);
+		}
+	}
+
+	@Test
+	void parsesA7zWithNoLocalFile() throws Exception {
+		// 7z needs random access; with no local file it is read into memory instead.
+		Path archive = Files.createTempFile("archive-parser-remote-", ".7z");
+		try {
+			try (SevenZOutputFile output = new SevenZOutputFile(archive.toFile())) {
+				SevenZArchiveEntry entry = output.createArchiveEntry(archive.toFile(), "notes.txt");
+				entry.setSize(5);
+				output.putArchiveEntry(entry);
+				output.write("hello".getBytes());
+				output.closeArchiveEntry();
+			}
+			byte[] bytes = Files.readAllBytes(archive);
+
+			ArchiveMetadata metadata = ArchiveParser.parse(streamOnly("backup.7z", bytes), new AtomicBoolean(false));
+
+			assertEquals(1, metadata.entryCount());
+		} finally {
+			Files.deleteIfExists(archive);
+		}
+	}
+
+	/** A resource with no local file, exactly as a remote panel supplies it. */
+	private static NuclrResource streamOnly(String name, byte[] content) {
+		NuclrResource resource = new NuclrResource(null) {
+			@Override
+			public java.io.InputStream openInputStream(java.nio.file.OpenOption... options) {
+				return new java.io.ByteArrayInputStream(content);
+			}
+		};
+		resource.setName(name);
+		resource.setLength(content.length);
+		return resource;
+	}
+
 	private static NuclrResource resourceFor(Path path) throws IOException {
 		NuclrResource resource = new NuclrResource(path) {
 			@Override

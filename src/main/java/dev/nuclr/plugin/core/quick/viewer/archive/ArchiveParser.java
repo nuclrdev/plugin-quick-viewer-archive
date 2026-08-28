@@ -65,7 +65,7 @@ public final class ArchiveParser {
 			parseSevenZip(item, builder, cancelled);
 		} else if (looksLikeCompressedArchive(lowerName)) {
 			parseCompressed(item, builder, lowerName, cancelled);
-		} else if (looksLikeZipFamily(lowerName) && item.getPath() != null) {
+		} else if (looksLikeZipFamily(lowerName)) {
 			parseZip(item.openInputStream(), builder, cancelled, extensionLabel(lowerName, "ZIP"));
 		} else {
 			parseByDetection(item, builder, lowerName, cancelled);
@@ -102,11 +102,14 @@ public final class ArchiveParser {
 			}
 		}
 
-		if (item.getPath() != null) {
+		// Nothing recognised the stream; a zip with data prepended (a self-extracting archive,
+		// say) still reads correctly when parsed as one, so it is worth the last attempt.
+		try {
 			parseZip(item.openInputStream(), builder, cancelled, extensionLabel(lowerName, "ZIP"));
 			return;
+		} catch (IOException e) {
+			throw new IOException("Unsupported archive format.");
 		}
-		throw new IOException("Unsupported archive format.");
 	}
 
 	private static void parseCompressed(NuclrResource item, SummaryBuilder builder, String lowerName,
