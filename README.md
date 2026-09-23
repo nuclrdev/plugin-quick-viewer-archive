@@ -45,6 +45,12 @@ Some formats expose more metadata than others. For example, packed sizes are usu
 
 ---
 
+## 🖼️ Thumbnail
+
+A listing page: the archive's name, format, file count and size, then its top-level entries.
+
+It implements the platform SDK 6.0.0 thumbnail methods, so plugins that want a picture of a file - attachment chips in AI Projects, for one - get it through Commander.
+
 ## 📥 Installation
 
 Copy the signed plugin archive and detached signature into the Nuclr Commander `plugins/` directory:
@@ -87,7 +93,7 @@ src/main/java/dev/nuclr/plugin/core/quick/viewer/
 
 | Library | Version | Purpose |
 |---|---|---|
-| `dev.nuclr:platform-sdk` | `3.0.1` | Nuclr platform interfaces |
+| `dev.nuclr:platform-sdk` | `6.0.0` | Nuclr platform interfaces |
 | `commons-compress` | `1.28.0` | ZIP, TAR, 7z, GZ, BZ2, XZ, CPIO, AR parsing |
 | `junrar` | `7.5.8` | RAR archive parsing |
 | `xz` | `1.11` | XZ decompression support |

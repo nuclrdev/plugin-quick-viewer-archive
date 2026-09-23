@@ -1,6 +1,9 @@
 package dev.nuclr.plugin.core.quick.viewer;
 
+import java.awt.image.BufferedImage;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -13,6 +16,9 @@ import dev.nuclr.platform.NuclrThemeScheme;
 import dev.nuclr.platform.plugin.NuclrPluginContext;
 import dev.nuclr.platform.plugin.NuclrResource;
 import dev.nuclr.platform.plugin.QuickViewNuclrPlugin;
+import dev.nuclr.plugin.core.quick.viewer.archive.ArchiveMetadata;
+import dev.nuclr.plugin.core.quick.viewer.archive.ArchiveParser;
+import dev.nuclr.plugin.core.quick.viewer.archive.ArchiveRootInfo;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -91,6 +97,43 @@ public class ArchiveQuickViewProvider implements QuickViewNuclrPlugin {
 		panel();
 		this.currentResource = resource;
 		return panel.load(resource, cancelled);
+	}
+
+	@Override
+	public boolean supportsThumbnails() {
+		return true;
+	}
+
+	/** A listing page: the archive's name and totals, then its top-level entries. */
+	@Override
+	public BufferedImage thumbnail(NuclrResource resource, int maxWidth, int maxHeight, AtomicBoolean cancelled) {
+		if (maxWidth <= 0 || maxHeight <= 0 || !supports(resource)) {
+			return null;
+		}
+		AtomicBoolean token = cancelled != null ? cancelled : new AtomicBoolean();
+		try {
+			ArchiveMetadata metadata = ArchiveParser.parse(resource, token);
+			if (token.get()) {
+				return null;
+			}
+			List<PageThumbnail.Line> lines = new ArrayList<>();
+			lines.add(PageThumbnail.Line.title(metadata.containerName() != null ? metadata.containerName() : resource.getName()));
+			lines.add(PageThumbnail.Line.muted(metadata.formatLabel() + " · " + metadata.fileCount() + " files · "
+					+ ArchiveViewPanel.formatSize(metadata.totalUncompressedKnown()
+							? metadata.totalUncompressedSize() : metadata.containerSize())));
+			lines.add(PageThumbnail.Line.blank());
+			for (ArchiveRootInfo root : metadata.rootEntries()) {
+				lines.add(PageThumbnail.Line.mono(root.directory() ? root.name() + "/" : root.name()));
+			}
+			int hidden = metadata.rootEntryCount() - metadata.rootEntries().size();
+			if (hidden > 0) {
+				lines.add(PageThumbnail.Line.muted("… and " + hidden + " more"));
+			}
+			return PageThumbnail.render(lines, maxWidth, maxHeight, token);
+		} catch (Exception e) {
+			log.debug("No thumbnail for {}: {}", resource.getName(), e.toString());
+			return null;
+		}
 	}
 
 	@Override
