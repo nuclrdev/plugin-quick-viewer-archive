@@ -1,5 +1,7 @@
 package dev.nuclr.plugin.core.quick.viewer.archive;
 
+import static dev.nuclr.plugin.core.quick.viewer.Messages.tr;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,7 +74,7 @@ public final class ArchiveParser {
 		}
 
 		if (builder.entryCount == 0) {
-			throw new IOException("No archive entries were found.");
+			throw new IOException(tr("parse.no.entries"));
 		}
 		return builder.build();
 	}
@@ -108,7 +110,7 @@ public final class ArchiveParser {
 			parseZip(item.openInputStream(), builder, cancelled, extensionLabel(lowerName, "ZIP"));
 			return;
 		} catch (IOException e) {
-			throw new IOException("Unsupported archive format.");
+			throw new IOException(tr("parse.unsupported"));
 		}
 	}
 
@@ -121,7 +123,7 @@ public final class ArchiveParser {
 					compressor = CompressorStreamFactory.detect(raw);
 					raw.reset();
 				} catch (CompressorException e) {
-					throw new IOException("Unable to detect compressed archive format.", e);
+					throw new IOException(tr("parse.undetected"), e);
 				}
 			}
 			parseCompressed(raw, compressor, builder, lowerName, cancelled);
@@ -145,7 +147,7 @@ public final class ArchiveParser {
 					entryName = stripCompressedSuffix(builder.containerName, lowerName);
 				}
 				builder.addEntry(entryName, false, -1L, builder.containerSize, meta.getModificationInstant());
-				builder.addWarning("Uncompressed size is not available from this single-file stream.");
+				builder.addWarning(tr("warning.no.uncompressed.size"));
 			}
 			return;
 		}
@@ -159,7 +161,7 @@ public final class ArchiveParser {
 			builder.formatLabel = prettyCompressorName(compressor);
 			builder.addEntry(stripCompressedSuffix(builder.containerName, lowerName), false, -1L, builder.containerSize,
 					null);
-			builder.addWarning("Uncompressed size is not available from this single-file stream.");
+			builder.addWarning(tr("warning.no.uncompressed.size"));
 		}
 	}
 
@@ -239,7 +241,7 @@ public final class ArchiveParser {
 						header.getFullPackSize() >= 0 ? header.getFullPackSize() : null,
 						toInstant(header.getLastModifiedTime()));
 				if (header.isSplitAfter() || header.isSplitBefore()) {
-					builder.addWarning("Multi-volume RAR member detected.");
+					builder.addWarning(tr("warning.multi.volume"));
 				}
 			}
 		}
@@ -407,7 +409,7 @@ public final class ArchiveParser {
 
 	private static String prettyArchiveName(String archiveType) {
 		if (archiveType == null) {
-			return "Archive";
+			return tr("format.archive");
 		}
 		return switch (archiveType) {
 		case ArchiveStreamFactory.ZIP -> "ZIP";
@@ -425,7 +427,7 @@ public final class ArchiveParser {
 
 	private static String prettyCompressorName(String compressor) {
 		if (compressor == null) {
-			return "Compressed";
+			return tr("format.compressed");
 		}
 		return switch (compressor) {
 		case CompressorStreamFactory.GZIP -> "GZIP";
@@ -482,12 +484,12 @@ public final class ArchiveParser {
 		if (item.getPath() != null && item.getPath().getFileName() != null) {
 			return item.getPath().getFileName().toString();
 		}
-		return "Archive";
+		return tr("format.archive");
 	}
 
 	private static void checkCancelled(AtomicBoolean cancelled) throws IOException {
 		if (cancelled.get() || Thread.currentThread().isInterrupted()) {
-			throw new IOException("Archive loading cancelled.");
+			throw new IOException(tr("parse.cancelled"));
 		}
 	}
 
@@ -507,7 +509,7 @@ public final class ArchiveParser {
 		private final Map<String, RootAccumulator> roots = new LinkedHashMap<>();
 		private final List<String> warnings = new ArrayList<>();
 
-		private String formatLabel = "Archive";
+		private String formatLabel = tr("format.archive");
 		private String comment;
 		private boolean encrypted;
 		private boolean entriesTruncated;
@@ -584,7 +586,7 @@ public final class ArchiveParser {
 				rootEntries.add(root.toInfo());
 			}
 			if (roots.size() > MAX_ROOT_ENTRIES) {
-				addWarning("Root entry list truncated to " + MAX_ROOT_ENTRIES + " items.");
+				addWarning(tr("warning.roots.truncated", String.valueOf(MAX_ROOT_ENTRIES)));
 			}
 			if (fileCount == 0) {
 				totalCompressedKnown = false;

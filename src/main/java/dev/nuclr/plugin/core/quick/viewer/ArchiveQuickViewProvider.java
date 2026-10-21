@@ -1,5 +1,7 @@
 package dev.nuclr.plugin.core.quick.viewer;
 
+import static dev.nuclr.plugin.core.quick.viewer.Messages.tr;
+
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -44,6 +46,9 @@ public class ArchiveQuickViewProvider implements QuickViewNuclrPlugin {
 	@Override
 	public void preinit(NuclrPluginContext context) {
 		this.context = context;
+		if (context != null) {
+			Messages.use(context.getLocale());
+		}
 	}
 
 	@Override
@@ -118,16 +123,16 @@ public class ArchiveQuickViewProvider implements QuickViewNuclrPlugin {
 			}
 			List<PageThumbnail.Line> lines = new ArrayList<>();
 			lines.add(PageThumbnail.Line.title(metadata.containerName() != null ? metadata.containerName() : resource.getName()));
-			lines.add(PageThumbnail.Line.muted(metadata.formatLabel() + " · " + metadata.fileCount() + " files · "
-					+ ArchiveViewPanel.formatSize(metadata.totalUncompressedKnown()
-							? metadata.totalUncompressedSize() : metadata.containerSize())));
+			lines.add(PageThumbnail.Line.muted(tr("thumb.summary", metadata.formatLabel(),
+					String.valueOf(metadata.fileCount()), ArchiveViewPanel.formatSize(metadata.totalUncompressedKnown()
+							? metadata.totalUncompressedSize() : metadata.containerSize()))));
 			lines.add(PageThumbnail.Line.blank());
 			for (ArchiveRootInfo root : metadata.rootEntries()) {
 				lines.add(PageThumbnail.Line.mono(root.directory() ? root.name() + "/" : root.name()));
 			}
 			int hidden = metadata.rootEntryCount() - metadata.rootEntries().size();
 			if (hidden > 0) {
-				lines.add(PageThumbnail.Line.muted("… and " + hidden + " more"));
+				lines.add(PageThumbnail.Line.muted(tr("thumb.more", String.valueOf(hidden))));
 			}
 			return PageThumbnail.render(lines, maxWidth, maxHeight, token);
 		} catch (Exception e) {

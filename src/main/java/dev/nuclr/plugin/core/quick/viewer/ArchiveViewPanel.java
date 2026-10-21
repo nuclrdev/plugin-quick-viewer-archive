@@ -1,5 +1,7 @@
 package dev.nuclr.plugin.core.quick.viewer;
 
+import static dev.nuclr.plugin.core.quick.viewer.Messages.tr;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -41,7 +43,7 @@ public class ArchiveViewPanel extends JPanel {
 
 	public ArchiveViewPanel() {
 		setLayout(new BorderLayout());
-		showMessage("No file selected.");
+		showMessage(tr("panel.no.file"));
 	}
 
 	public boolean load(NuclrResource item, AtomicBoolean cancelled) {
@@ -49,7 +51,7 @@ public class ArchiveViewPanel extends JPanel {
 		if (previous != null) {
 			previous.interrupt();
 		}
-		showMessage("Loading...");
+		showMessage(tr("panel.loading"));
 		loadThread = Thread.ofVirtual().name("archive-quick-view-" + item.getName()).start(() -> {
 			try {
 				ArchiveMetadata metadata = ArchiveParser.parse(item, cancelled);
@@ -97,7 +99,7 @@ public class ArchiveViewPanel extends JPanel {
 		JPanel errorPanel = new JPanel(new BorderLayout());
 		errorPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-		JLabel title = new JLabel("Archive preview unavailable", JLabel.CENTER);
+		JLabel title = new JLabel(tr("panel.unavailable"), JLabel.CENTER);
 		title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
 
 		JLabel detail = new JLabel("<html><center>" + escapeHtml(message) + "</center></html>", JLabel.CENTER);
@@ -130,26 +132,26 @@ public class ArchiveViewPanel extends JPanel {
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		panel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
-		FormSection summary = new FormSection("Summary");
-		summary.addRow("Name", metadata.containerName());
-		summary.addRow("Format", metadata.formatLabel());
-		summary.addRow("Archive size", formatSize(metadata.containerSize()));
+		FormSection summary = new FormSection(tr("section.summary"));
+		summary.addRow(tr("row.name"), metadata.containerName());
+		summary.addRow(tr("row.format"), metadata.formatLabel());
+		summary.addRow(tr("row.archive.size"), formatSize(metadata.containerSize()));
 		if (metadata.containerModified() != null) {
-			summary.addRow("Modified", formatInstant(metadata.containerModified()));
+			summary.addRow(tr("row.modified"), formatInstant(metadata.containerModified()));
 		}
-		summary.addRow("Entries", Integer.toString(metadata.entryCount()));
-		summary.addRow("Files", Integer.toString(metadata.fileCount()));
-		summary.addRow("Directories", Integer.toString(metadata.directoryCount()));
-		summary.addRow("Root entries", Integer.toString(metadata.rootEntryCount()));
-		summary.addRow("Total unpacked", formatMaybeSize(metadata.totalUncompressedKnown(), metadata.totalUncompressedSize()));
+		summary.addRow(tr("row.entries"), Integer.toString(metadata.entryCount()));
+		summary.addRow(tr("row.files"), Integer.toString(metadata.fileCount()));
+		summary.addRow(tr("row.directories"), Integer.toString(metadata.directoryCount()));
+		summary.addRow(tr("row.root.entries"), Integer.toString(metadata.rootEntryCount()));
+		summary.addRow(tr("row.total.unpacked"), formatMaybeSize(metadata.totalUncompressedKnown(), metadata.totalUncompressedSize()));
 		if (metadata.totalCompressedKnown()) {
-			summary.addRow("Packed entries", formatSize(metadata.totalCompressedSize()));
+			summary.addRow(tr("row.packed.entries"), formatSize(metadata.totalCompressedSize()));
 			if (metadata.totalCompressedSize() > 0 && metadata.totalUncompressedKnown()) {
-				summary.addRow("Ratio", formatRatio(metadata.totalCompressedSize(), metadata.totalUncompressedSize()));
+				summary.addRow(tr("row.ratio"), formatRatio(metadata.totalCompressedSize(), metadata.totalUncompressedSize()));
 			}
 		}
 		if (metadata.encrypted()) {
-			summary.addRow("Encrypted", "Yes");
+			summary.addRow(tr("row.encrypted"), tr("value.yes"));
 		}
 		panel.add(summary);
 		panel.add(vgap(6));
@@ -158,15 +160,15 @@ public class ArchiveViewPanel extends JPanel {
 				|| metadata.latestEntryModified() != null
 				|| metadata.comment() != null;
 		if (hasDetails) {
-			FormSection details = new FormSection("Details");
+			FormSection details = new FormSection(tr("section.details"));
 			if (metadata.earliestEntryModified() != null) {
-				details.addRow("Earliest entry", formatInstant(metadata.earliestEntryModified()));
+				details.addRow(tr("row.earliest.entry"), formatInstant(metadata.earliestEntryModified()));
 			}
 			if (metadata.latestEntryModified() != null) {
-				details.addRow("Latest entry", formatInstant(metadata.latestEntryModified()));
+				details.addRow(tr("row.latest.entry"), formatInstant(metadata.latestEntryModified()));
 			}
 			if (metadata.comment() != null) {
-				details.addRow("Comment", metadata.comment());
+				details.addRow(tr("row.comment"), metadata.comment());
 			}
 			panel.add(details);
 			panel.add(vgap(6));
@@ -174,10 +176,10 @@ public class ArchiveViewPanel extends JPanel {
 
 		List<ArchiveRootInfo> roots = metadata.rootEntries();
 		if (!roots.isEmpty()) {
-			FormSection rootSection = new FormSection("Root Entries (" + roots.size() + ")");
+			FormSection rootSection = new FormSection(tr("section.root.entries", String.valueOf(roots.size())));
 			for (ArchiveRootInfo root : roots) {
 				String descriptor = root.directory()
-						? root.descendantCount() + " items, " + formatSize(root.totalSize())
+						? tr("root.items", String.valueOf(root.descendantCount()), formatSize(root.totalSize()))
 						: formatSize(root.totalSize());
 				rootSection.addFileRow(root.name() + (root.directory() ? "/" : ""), descriptor, root.lastModified());
 			}
@@ -186,7 +188,7 @@ public class ArchiveViewPanel extends JPanel {
 		}
 
 		if (!metadata.warnings().isEmpty()) {
-			FormSection warnings = new FormSection("Warnings");
+			FormSection warnings = new FormSection(tr("section.warnings"));
 			for (String warning : metadata.warnings()) {
 				warnings.addMonoText("! " + warning);
 			}
@@ -194,16 +196,16 @@ public class ArchiveViewPanel extends JPanel {
 			panel.add(vgap(6));
 		}
 
-		String filesHeader = "Files (" + metadata.fileCount() + " files, "
-				+ formatMaybeSize(metadata.totalUncompressedKnown(), metadata.totalUncompressedSize()) + ")";
+		String filesHeader = tr("section.files", String.valueOf(metadata.fileCount()),
+				formatMaybeSize(metadata.totalUncompressedKnown(), metadata.totalUncompressedSize()));
 		FormSection files = new FormSection(filesHeader);
 		for (ArchiveEntryInfo entry : metadata.entries()) {
 			String path = entry.path() + (entry.directory() ? "/" : "");
-			String detail = entry.directory() ? "(dir)" : formatMaybeSize(entry.size() >= 0, Math.max(0L, entry.size()));
+			String detail = entry.directory() ? tr("entry.dir") : formatMaybeSize(entry.size() >= 0, Math.max(0L, entry.size()));
 			files.addFileRow(path, detail, entry.lastModified());
 		}
 		if (metadata.entriesTruncated()) {
-			files.addMonoText("... file list truncated");
+			files.addMonoText(tr("files.truncated"));
 		}
 		panel.add(files);
 		panel.add(Box.createVerticalGlue());
@@ -216,12 +218,12 @@ public class ArchiveViewPanel extends JPanel {
 	}
 
 	private static String formatMaybeSize(boolean known, long bytes) {
-		return known ? formatSize(bytes) : "Unknown";
+		return known ? formatSize(bytes) : tr("size.unknown");
 	}
 
 	private static String formatRatio(long compressed, long uncompressed) {
 		if (compressed <= 0 || uncompressed < 0) {
-			return "Unknown";
+			return tr("size.unknown");
 		}
 		double ratio = (double) uncompressed / (double) compressed;
 		return String.format("%.2fx", ratio);
@@ -229,24 +231,24 @@ public class ArchiveViewPanel extends JPanel {
 
 	static String formatSize(long bytes) {
 		if (bytes < 0) {
-			return "Unknown";
+			return tr("size.unknown");
 		}
 		if (bytes < 1_024) {
-			return bytes + " B";
+			return tr("size.bytes", String.valueOf(bytes));
 		}
 		double kb = bytes / 1_024.0;
 		if (kb < 1_024) {
-			return String.format("%.1f KB", kb);
+			return tr("size.kb", String.format("%.1f", kb));
 		}
 		double mb = kb / 1_024.0;
 		if (mb < 1_024) {
-			return String.format("%.2f MB", mb);
+			return tr("size.mb", String.format("%.2f", mb));
 		}
 		double gb = mb / 1_024.0;
 		if (gb < 1_024) {
-			return String.format("%.2f GB", gb);
+			return tr("size.gb", String.format("%.2f", gb));
 		}
-		return String.format("%.2f TB", gb / 1_024.0);
+		return tr("size.tb", String.format("%.2f", gb / 1_024.0));
 	}
 
 	static String escapeHtml(String value) {
